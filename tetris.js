@@ -15,7 +15,7 @@ export class Tetris extends Scene {
             torus2: new defs.Torus(3, 15),
             sphere: new defs.Subdivision_Sphere(4),
             circle: new defs.Regular_2D_Polygon(1, 15),
-            square: new defs.Square(),
+            square: new defs.Cube(),
             // TODO:  Fill in as many additional shape instances as needed in this key/value table.
             //        (Requirement 1)s
         };
@@ -31,8 +31,9 @@ export class Tetris extends Scene {
             //        (Requirement 4)
 
         }
+        // look straight down at negative z, up is y, right is x
+        this.initial_camera_location = Mat4.look_at(vec3(0, 0, 1), vec3(0, 0, 0), vec3(0, 1, 0));
 
-        this.initial_camera_location = Mat4.look_at(vec3(0, 10, 20), vec3(0, 0, 0), vec3(0, 1, 0));
     }
 
     make_control_panel() {
@@ -75,8 +76,20 @@ export class Tetris extends Scene {
         // The parameters of the Light are: position, color, size
         program_state.lights = [new Light(light_position, yellow, 10000)];
             
+        let top_bot_scale = model_transform.times(Mat4.scale(10, 1, 10))
+        let left_right_scale = model_transform.times(Mat4.scale(1, 10, 10))
+        //let wall_transform_x = model_transform.times(Mat4.scale(1, 10, 10))
+        //let wall_transform_y = base_transform.times(Mat4.rotation(Math.PI/2, 0, 1, 0))
+        let wall_transform_north = Mat4.translation(0, 11, -11).times(top_bot_scale)
+        let wall_transform_south = Mat4.translation(0, -11, -11).times(top_bot_scale)
+        let wall_transform_west = Mat4.translation(-11, 0, -11).times(left_right_scale)
+        let wall_transform_east = Mat4.translation(11, 0, -11).times(left_right_scale)
 
         this.shapes.square.draw(context, program_state, model_transform, this.materials.test.override({color: yellow}));
+        this.shapes.square.draw(context, program_state, wall_transform_north, this.materials.test.override({color: yellow}));
+        this.shapes.square.draw(context, program_state, wall_transform_south, this.materials.test.override({color: yellow}));
+        this.shapes.square.draw(context, program_state, wall_transform_east, this.materials.test.override({color: yellow}));
+        this.shapes.square.draw(context, program_state, wall_transform_west, this.materials.test.override({color: yellow}));
     }
 }
 
