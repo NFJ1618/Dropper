@@ -15,6 +15,7 @@ export class Tetris extends Scene {
             torus2: new defs.Torus(3, 15),
             sphere: new defs.Subdivision_Sphere(4),
             circle: new defs.Regular_2D_Polygon(1, 15),
+            square: new defs.Square(),
             // TODO:  Fill in as many additional shape instances as needed in this key/value table.
             //        (Requirement 1)s
         };
@@ -25,7 +26,7 @@ export class Tetris extends Scene {
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
             // test2: new Material(new Gouraud_Shader(),
             //     {ambient: .4, diffusivity: .6, color: hex_color("#992828")}),
-            ring: new Material(new Ring_Shader()),
+            // ring: new Material(new Ring_Shader()),
             // TODO:  Fill in as many additional material objects as needed in this key/value table.
             //        (Requirement 4)
 
@@ -75,7 +76,7 @@ export class Tetris extends Scene {
         program_state.lights = [new Light(light_position, yellow, 10000)];
             
 
-        this.shapes.torus.draw(context, program_state, model_transform, this.materials.test.override({color: yellow}));
+        this.shapes.square.draw(context, program_state, model_transform, this.materials.test.override({color: yellow}));
     }
 }
 
