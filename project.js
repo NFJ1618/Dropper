@@ -1,10 +1,11 @@
 import {defs, tiny} from './examples/common.js';
+import { dropper } from './dropper.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
 } = tiny;
 
-export class Tetris extends Scene {
+export class Project extends Scene {
     constructor() {
         // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
         super();
@@ -33,6 +34,9 @@ export class Tetris extends Scene {
         }
         // look straight down at negative z, up is y, right is x
         this.initial_camera_location = Mat4.look_at(vec3(0, 0, 1), vec3(0, 0, 0), vec3(0, 1, 0));
+        this.spawn_pos = -300
+        this.initial_velocity = 0
+        this.platforms = [new dropper.Platform(this.spawn_pos, this.shapes.square)]
 
     }
 
@@ -53,7 +57,7 @@ export class Tetris extends Scene {
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
-            this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
+            this.children.push(context.scratchpad.controls = new dropper.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
             program_state.set_camera(this.initial_camera_location);
         }
@@ -67,25 +71,41 @@ export class Tetris extends Scene {
         const yellow = hex_color("#fac91a");
         let model_transform = Mat4.identity();
 
-        // TODO: Create Planets (Requirement 1)
-        // this.shapes.[XXX].draw([XXX]) // <--example
+        //Physics
+        const g = 9.81
+        let z_velocity = 0.5 * g * (t**2)
+        z_velocity = Math.min(z_velocity, 100)
        
         // TODO: Lighting (Requirement 2)
-        const light_position = vec4(0, 0, 0, 1);
+        const light_position = vec4(0, 0, 5, 1);
         const second_light_position = vec4(0, 0, 10, 1)
         // The parameters of the Light are: position, color, size
-        program_state.lights = [new Light(light_position, yellow, 10000)];
-            
-        let top_bot_scale = model_transform.times(Mat4.scale(10, 1, 10))
-        let left_right_scale = model_transform.times(Mat4.scale(1, 10, 10))
+        program_state.lights = [new Light(light_position, yellow, 1000000)];
+        const depth = 1000
+        const side = 10
+        let top_bot_scale = Mat4.scale(side, 1, depth)
+        let left_right_scale = Mat4.scale(1, side, depth)
+        
         //let wall_transform_x = model_transform.times(Mat4.scale(1, 10, 10))
         //let wall_transform_y = base_transform.times(Mat4.rotation(Math.PI/2, 0, 1, 0))
-        let wall_transform_north = Mat4.translation(0, 11, -11).times(top_bot_scale)
-        let wall_transform_south = Mat4.translation(0, -11, -11).times(top_bot_scale)
-        let wall_transform_west = Mat4.translation(-11, 0, -11).times(left_right_scale)
-        let wall_transform_east = Mat4.translation(11, 0, -11).times(left_right_scale)
+        let wall_transform_north = Mat4.translation(0, side+1, -depth-1).times(top_bot_scale)
+        let wall_transform_south = Mat4.translation(0, -side-1, -depth-1).times(top_bot_scale)
+        let wall_transform_west = Mat4.translation(-side-1, 0, -depth-1).times(left_right_scale)
+        let wall_transform_east = Mat4.translation(side+1, 0, -depth-1).times(left_right_scale)
 
-        this.shapes.square.draw(context, program_state, model_transform, this.materials.test.override({color: yellow}));
+        this.platforms = this.platforms.filter(x => x.position < 10)
+
+        if (this.platforms.length === 0)
+            this.platforms.push(new dropper.Platform(this.spawn_pos, this.shapes.square))
+        
+        for (let i = 0; i < this.platforms.length; ++i) {
+            for (let j = 0; j < this.platforms[i].shapes.length; ++j) {
+                let object_start = Mat4.translation(0, 0, this.platforms[i].position+z_velocity*dt)
+                this.platforms[i].shapes[j].draw(context, program_state, object_start, this.materials.test)
+            }
+            this.platforms[i].position += z_velocity*dt
+        }
+        
         this.shapes.square.draw(context, program_state, wall_transform_north, this.materials.test.override({color: yellow}));
         this.shapes.square.draw(context, program_state, wall_transform_south, this.materials.test.override({color: yellow}));
         this.shapes.square.draw(context, program_state, wall_transform_east, this.materials.test.override({color: yellow}));
