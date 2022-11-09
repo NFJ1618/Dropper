@@ -32,6 +32,11 @@ export class Project extends Scene {
             //        (Requirement 4)
 
         }
+
+        
+        this.depth = 1000
+        this.side = 10
+        this.walls = dropper.Walls(this.side, this.depth, this.shapes.square, this.materials.test.override({color: hex_color("#fac91a")}))
         // look straight down at negative z, up is y, right is x
         this.initial_camera_location = Mat4.look_at(vec3(0, 0, 1), vec3(0, 0, 0), vec3(0, 1, 0));
         this.spawn_pos = -300
@@ -81,17 +86,11 @@ export class Project extends Scene {
         const second_light_position = vec4(0, 0, 10, 1)
         // The parameters of the Light are: position, color, size
         program_state.lights = [new Light(light_position, yellow, 1000000)];
-        const depth = 1000
-        const side = 10
-        let top_bot_scale = Mat4.scale(side, 1, depth)
-        let left_right_scale = Mat4.scale(1, side, depth)
+        
         
         //let wall_transform_x = model_transform.times(Mat4.scale(1, 10, 10))
         //let wall_transform_y = base_transform.times(Mat4.rotation(Math.PI/2, 0, 1, 0))
-        let wall_transform_north = Mat4.translation(0, side+1, -depth-1).times(top_bot_scale)
-        let wall_transform_south = Mat4.translation(0, -side-1, -depth-1).times(top_bot_scale)
-        let wall_transform_west = Mat4.translation(-side-1, 0, -depth-1).times(left_right_scale)
-        let wall_transform_east = Mat4.translation(side+1, 0, -depth-1).times(left_right_scale)
+        
 
         this.platforms = this.platforms.filter(x => x.position < 10)
 
@@ -106,10 +105,8 @@ export class Project extends Scene {
             this.platforms[i].position += z_velocity*dt
         }
         
-        this.shapes.square.draw(context, program_state, wall_transform_north, this.materials.test.override({color: yellow}));
-        this.shapes.square.draw(context, program_state, wall_transform_south, this.materials.test.override({color: yellow}));
-        this.shapes.square.draw(context, program_state, wall_transform_east, this.materials.test.override({color: yellow}));
-        this.shapes.square.draw(context, program_state, wall_transform_west, this.materials.test.override({color: yellow}));
+        for (let i = 0; i < this.walls.wall_transforms.length; ++i)
+            this.walls.shape.draw(context, program_state, this.walls.wall_transforms[i], this.walls.material)
     }
 }
 

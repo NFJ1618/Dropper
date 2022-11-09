@@ -12,6 +12,23 @@ const dropper = {};
 
 export {tiny, dropper};
 
+const Walls = dropper.Walls = 
+    class Walls {
+        constructor(side, depth, shape, material) {
+            this.side = side
+            this.depth = depth
+            this.shape = shape
+            this.material = material
+            const top_bot_scale = Mat4.scale(side, 1, depth)
+            const left_right_scale = Mat4.scale(1, side, depth)
+            const wall_transform_north = Mat4.translation(0, side+1, -depth-1).times(top_bot_scale)
+            const wall_transform_south = Mat4.translation(0, -side-1, -depth-1).times(top_bot_scale)
+            const wall_transform_west = Mat4.translation(-side-1, 0, -depth-1).times(left_right_scale)
+            const wall_transform_east = Mat4.translation(side+1, 0, -depth-1).times(left_right_scale)
+            this.wall_transforms = [wall_transform_north, wall_transform_east, wall_transform_south, wall_transform_west]
+        }
+    }
+
 const Platform = dropper.Platform = 
     class Platform {
         constructor(start_Pos, shape) {
