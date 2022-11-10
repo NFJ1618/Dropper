@@ -81,11 +81,22 @@ export class Project extends Scene {
         // TODO:  Fill in matrix operations and drawing code to draw the solar system scene (Requirements 3 and 4)
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
         const yellow = hex_color("#fac91a");
-        let model_transform = Mat4.identity();
+        let adjust_box = Mat4.identity();
 
-        if (this.thrust[0] || this.thrust[1])
+        if (this.thrust[0] || this.thrust[1]) 
             this.box_pos = this.box_pos.times(Mat4.translation(this.thrust[0]*dt, this.thrust[1]*dt, 0))
 
+        let center = this.box_pos.times(vec4(0, 0, 0, 1))
+        if (center[0]+this.radius > this.side)
+            adjust_box = adjust_box.times(Mat4.translation(this.side-center[0]-this.radius, 0, 0))
+        if (center[0]-this.radius < -this.side)
+            adjust_box = adjust_box.times(Mat4.translation(-this.side-center[0]+this.radius, 0, 0))
+        if (center[1]+this.radius > this.side)
+            adjust_box = adjust_box.times(Mat4.translation(0, this.side-center[1]-this.radius, 0))
+        if (center[1]-this.radius < -this.side)
+            adjust_box = adjust_box.times(Mat4.translation(0, -this.side-center[1]+this.radius, 0))
+        
+        this.box_pos = this.box_pos.times(adjust_box)
         //Physics
         const g = 9.81
         let z_velocity = 0.5 * g * (t**2)
