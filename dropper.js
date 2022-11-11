@@ -1,30 +1,32 @@
-import {tiny} from '../tiny-graphics.js';
-import {widgets} from '../tiny-graphics-widgets.js';
+import { tiny } from '../tiny-graphics.js';
+import { widgets } from '../tiny-graphics-widgets.js';
+import constants from './constants.js';
 // Pull these names into this module's scope for convenience:
 const {
     Vector, Vector3, vec, vec3, vec4, color, Matrix, Mat4,
     Light, Shape, Material, Shader, Texture, Scene
 } = tiny;
 
+
 Object.assign(tiny, widgets);
 
 const dropper = {};
 
-export {tiny, dropper};
+export { tiny, dropper };
 
-const Walls = dropper.Walls = 
+const Walls = dropper.Walls =
     class Walls {
-        constructor(side, depth, shape, material) {
-            this.side = side
-            this.depth = depth
+        constructor(depth, shape, material) {
+            this.side = constants.WALL_SIDE_LENGTH,
+                this.depth = depth
             this.shape = shape
             this.material = material
-            const top_bot_scale = Mat4.scale(side, 1, depth)
-            const left_right_scale = Mat4.scale(1, side, depth)
-            const wall_transform_north = Mat4.translation(0, side+1, -depth-1).times(top_bot_scale)
-            const wall_transform_south = Mat4.translation(0, -side-1, -depth-1).times(top_bot_scale)
-            const wall_transform_west = Mat4.translation(-side-1, 0, -depth-1).times(left_right_scale)
-            const wall_transform_east = Mat4.translation(side+1, 0, -depth-1).times(left_right_scale)
+            const top_bot_scale = Mat4.scale(this.side, 1, depth)
+            const left_right_scale = Mat4.scale(1, this.side, depth)
+            const wall_transform_north = Mat4.translation(0, this.side + 1, -depth - 1).times(top_bot_scale)
+            const wall_transform_south = Mat4.translation(0, -this.side - 1, -depth - 1).times(top_bot_scale)
+            const wall_transform_west = Mat4.translation(-this.side - 1, 0, -depth - 1).times(left_right_scale)
+            const wall_transform_east = Mat4.translation(this.side + 1, 0, -depth - 1).times(left_right_scale)
             this.wall_transforms = [wall_transform_north, wall_transform_east, wall_transform_south, wall_transform_west]
         }
 
@@ -41,11 +43,65 @@ const Walls = dropper.Walls =
         }
     }
 
-const Platform = dropper.Platform = 
+const ShapeDrawPackage = dropper.ShapeDrawPackage =
+    class ShapeDrawPackage {
+        constructor(shapeIndex, xTranslation = 0, yTranslation = 0, zTranslation = 0, zRotation = 0, material = null) {
+            this.shapeIndex = shapeIndex;
+            this.xTranslation = xTranslation;
+            this.yTranslation = yTranslation;
+            this.zTranslation = zTranslation;
+            this.zRotation = zRotation;
+            this.material = material;
+        }
+    }
+
+const Platform = dropper.Platform =
     class Platform {
-        constructor(start_Pos, shape) {
-            this.shapes = Array(shape)
-            this.position = start_Pos
+        constructor(start_Pos, shapes) {
+            this.shapes = shapes;
+            this.position = start_Pos;
+            this.shapePackages = [];
+        }
+        generate() { throw Error("this should be overridden") }
+    }
+
+const UniformScatterPlatform = dropper.UniformScatterPlatform =
+    class UniformScatterPlatform extends Platform {
+        /**
+         * 
+         * @param {*} start_Pos 
+         * @param {*} unitShapes 
+         * @param {*} depth - how far the platform goes on z axis
+         * @param {*} fill - float between 0 and 1, determines density of platform
+         */
+        constructor(start_Pos, shape, fill = .1, depth = 1) {
+            super(start_Pos, Array(shape))
+            // create shapePackages
+            this.generate(depth, fill);
+        }
+        generate(depth, fill) {
+            // calculate inner wall length and height
+            const length = constants.WALL_SIDE_LENGTH * 2;
+            const shapePackages = [];
+
+            let numOfBlocks = 0;
+            for (let z = 0; z < depth; z++) {
+                // goes for certian depth
+                for (let x = 0; x < length; x++) {
+                    // go row by row
+                    for (let y = 0; y < length; y++) {
+                        // run random
+                        // has to meet threshold
+                        if (Math.random() <= fill) {
+                            numOfBlocks++;
+                            // create shape packages
+                            shapePackages.push(new ShapeDrawPackage(0, x - length / 2, y - length / 2, z, 0));
+                        }
+                    }
+                }
+            }
+            console.log(numOfBlocks);
+            this.shapePackages = shapePackages;
         }
     }
 
@@ -199,7 +255,7 @@ const Movement_Controls = dropper.Movement_Controls =
             //         // On X step, rotate around Y axis, and vice versa.
             //         this.matrix().post_multiply(Mat4.rotation(-velocity, i, 1 - i, 0));
             //         this.inverse().pre_multiply(Mat4.rotation(+velocity, i, 1 - i, 0));
-                // }
+            // }
             this.matrix().post_multiply(Mat4.rotation(-.1 * this.roll, 0, 0, 1));
             this.inverse().pre_multiply(Mat4.rotation(+.1 * this.roll, 0, 0, 1));
             // Now apply translation movement of the camera, in the newest local coordinate frame.
@@ -244,12 +300,12 @@ const Movement_Controls = dropper.Movement_Controls =
             if (this.position_update[0] || this.position_update[1]) {
                 let mag = Math.sqrt(this.position_update.dot(this.position_update))
                 let a = this.position_update.dot(this.absolute_thrust) / mag
-                let b = this.position_update.times(1/mag).times(a)
+                let b = this.position_update.times(1 / mag).times(a)
                 let c = this.absolute_thrust.minus(b)
                 this.absolute_thrust = vec4(c[0], c[1], c[2], 0)
                 this.thrust = this.matrix().times(this.absolute_thrust).to3()
             }
-                
+
             this.first_person_flyaround(dt * r, dt * m);
             // Also apply third-person "arcball" camera mode if a mouse drag is occurring:
             // if (this.mouse.anchor)
@@ -264,4 +320,4 @@ const Movement_Controls = dropper.Movement_Controls =
             this.position_update[1] = vec[1]
             this.position_update[2] = vec[2]
         }
-}   
+    }   
