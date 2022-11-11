@@ -45,13 +45,21 @@ const Walls = dropper.Walls =
 
 const ShapeDrawPackage = dropper.ShapeDrawPackage =
     class ShapeDrawPackage {
-        constructor(shapeIndex, xTranslation = 0, yTranslation = 0, zTranslation = 0, zRotation = 0, material = null) {
+        /**
+         * 
+         * @param {*} shapeIndex 
+         * @param {*} xTranslation 
+         * @param {*} yTranslation 
+         * @param {*} zTranslation 
+         * @param {*} zRotation 
+         * @param {*} material THIS IS A FUNCTION, this is so that we dont duplicate a shit load of memory
+         */
+        constructor(shapeIndex, xTranslation = 0, yTranslation = 0, zTranslation = 0, zRotation = 0) {
             this.shapeIndex = shapeIndex;
             this.xTranslation = xTranslation;
             this.yTranslation = yTranslation;
             this.zTranslation = zTranslation;
             this.zRotation = zRotation;
-            this.material = material;
         }
     }
 
@@ -74,12 +82,13 @@ const UniformScatterPlatform = dropper.UniformScatterPlatform =
          * @param {*} depth - how far the platform goes on z axis
          * @param {*} fill - float between 0 and 1, determines density of platform
          */
-        constructor(start_Pos, shape, fill = .1, depth = 1) {
+        constructor(start_Pos, shape, fill, material = () => null, depth = 1) {
             super(start_Pos, Array(shape))
             // create shapePackages
-            this.generate(depth, fill);
+            this.material = material;
+            this.generateShapePackages(depth, fill);
         }
-        generate(depth, fill) {
+        generateShapePackages(depth, fill) {
             // calculate inner wall length and height
             const length = constants.WALL_SIDE_LENGTH * 2;
             const shapePackages = [];
@@ -100,7 +109,6 @@ const UniformScatterPlatform = dropper.UniformScatterPlatform =
                     }
                 }
             }
-            console.log(numOfBlocks);
             this.shapePackages = shapePackages;
         }
     }
