@@ -14,6 +14,23 @@ const dropper = {};
 
 export { tiny, dropper };
 
+const Utils = dropper.Utils = 
+    class Utils {
+        check_square_with_sphere_collision(sphere_center, sphere_radius, square_center, square_radius) {
+            let z_distance = sphere_center[2] - square_center[2]
+            if (Math.abs(z_distance) > square_radius)
+                return false
+            
+            let x_distance = sphere_center[0] - square_center[0]
+            let y_distance = sphere_center[1] - square_center[1]
+            let far = sphere_radius + Math.sqrt(0.5) * square_radius
+            if (Math.abs(x_distance) > far || Math.abs(y_distance) > far)
+                return false
+
+            return true
+        }
+    }
+
 const Walls = dropper.Walls =
     class Walls {
         constructor(depth, shape, material) {

@@ -47,7 +47,9 @@ export class Project extends Scene {
         this.thrust = vec4(0, 0, 0, 0)
         this.displacement = 5
         this.box_pos = Mat4.translation(0, 0, -30)
+        this.box_pos_vec = this.box_pos.times(vec4(0, 0, 0, 1))
         this.first_person = true
+        this.utils = new dropper.Utils()
     }
 
     make_control_panel() {
@@ -82,7 +84,7 @@ export class Project extends Scene {
             this.shapes.sphere.draw(context, program_state, this.box_pos, this.materials.test)
         }
         else {
-            program_state.set_camera(Mat4.inverse(this.box_pos))
+            program_state.set_camera(Mat4.inverse(this.box_pos)) // might be slow, optimize by modifying position in camera space instead
         }
 
         program_state.projection_transform = Mat4.perspective(
@@ -109,6 +111,8 @@ export class Project extends Scene {
             adjust_box = adjust_box.times(Mat4.translation(0, -constants.WALL_SIDE_LENGTH - center[1] + this.radius, 0))
 
         this.box_pos = this.box_pos.times(adjust_box)
+        this.box_pos_vec = this.box_pos.times(vec4(0, 0, 0, 1))
+
         //Physics
         const g = 9.81
         let z_velocity = 0.5 * g * (t ** 2)
@@ -129,7 +133,7 @@ export class Project extends Scene {
 
         if (this.platforms.length === 0) {
             this.difficulty += .0025;
-            console.log(this.difficulty);
+            //console.log(this.difficulty);
             if (this.difficulty >= .8) this.difficulty = .5;
             this.platforms.push(new dropper.UniformScatterPlatform(this.spawn_pos, this.shapes.square, this.difficulty))
         }
@@ -140,7 +144,10 @@ export class Project extends Scene {
                 const shapePackage = platform.shapePackages[j];
 
                 let object_start = Mat4.translation(shapePackage.xTranslation, shapePackage.yTranslation, platform.position + z_velocity * dt + shapePackage.zTranslation)
-                this.platforms[i].shapes[shapePackage.shapeIndex].draw(context, program_state, object_start, this.materials.test)
+                let object_pos = object_start.times(vec4(0, 0, 0, 1))
+                platform.shapes[shapePackage.shapeIndex].draw(context, program_state, object_start, this.materials.test)
+                if (this.utils.check_square_with_sphere_collision(this.box_pos_vec, this.radius, object_pos, 1))
+                    console.log("Collided")
             }
             platform.position += z_velocity * dt
         }
