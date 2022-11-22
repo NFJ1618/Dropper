@@ -47,6 +47,7 @@ export class Project extends Scene {
         this.thrust = vec4(0, 0, 0, 0)
         this.displacement = 5
         this.box_pos = Mat4.translation(0, 0, -30)
+        this.first_person = true
     }
 
     make_control_panel() {
@@ -56,6 +57,7 @@ export class Project extends Scene {
         this.key_triggered_button("Left", ["a"], () => this.thrust[0] = -this.displacement, undefined, () => this.thrust[0] = 0);
         this.key_triggered_button("Down", ["s"], () => this.thrust[1] = -this.displacement, undefined, () => this.thrust[1] = 0);
         this.key_triggered_button("Right", ["d"], () => this.thrust[0] = this.displacement, undefined, () => this.thrust[0] = 0);
+        this.key_triggered_button("Perspective", ["e"], () => this.first_person = !this.first_person)
         this.new_line();
     }
 
@@ -73,6 +75,14 @@ export class Project extends Scene {
         else {
             //let collision = this.walls.check_sphere_collision(context.scratchpad.controls.pos, this.radius)
             //context.scratchpad.controls.update_thrust(collision)
+        }
+
+        if (!this.first_person) {
+            program_state.set_camera(this.initial_camera_location)
+            this.shapes.sphere.draw(context, program_state, this.box_pos, this.materials.test)
+        }
+        else {
+            program_state.set_camera(Mat4.inverse(this.box_pos))
         }
 
         program_state.projection_transform = Mat4.perspective(
@@ -113,7 +123,6 @@ export class Project extends Scene {
 
         //let wall_transform_x = model_transform.times(Mat4.scale(1, 10, 10))
         //let wall_transform_y = base_transform.times(Mat4.rotation(Math.PI/2, 0, 1, 0))
-        this.shapes.square.draw(context, program_state, this.box_pos, this.materials.test)
 
 
         this.platforms = this.platforms.filter(x => x.position < 10)
