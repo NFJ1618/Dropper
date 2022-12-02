@@ -17,16 +17,17 @@ export { tiny, dropper };
 const Walls = dropper.Walls =
     class Walls {
         constructor(depth, shape, material) {
-            this.side = constants.WALL_SIDE_LENGTH,
-                this.depth = depth
+            this.side = constants.WALL_SIDE_LENGTH
+            this.depth = depth
             this.shape = shape
             this.material = material
             const top_bot_scale = Mat4.scale(this.side, 1, depth)
             const left_right_scale = Mat4.scale(1, this.side, depth)
+            const side_rotate = Mat4.rotation(Math.PI/2, 1, 0, 0)
             const wall_transform_north = Mat4.translation(0, this.side + 1, -depth - 1).times(top_bot_scale)
             const wall_transform_south = Mat4.translation(0, -this.side - 1, -depth - 1).times(top_bot_scale)
-            const wall_transform_west = Mat4.translation(-this.side - 1, 0, -depth - 1).times(left_right_scale)
-            const wall_transform_east = Mat4.translation(this.side + 1, 0, -depth - 1).times(left_right_scale)
+            const wall_transform_west = Mat4.translation(-this.side - 1, 0, -depth - 1).times(left_right_scale).times(side_rotate)
+            const wall_transform_east = Mat4.translation(this.side + 1, 0, -depth - 1).times(left_right_scale).times(side_rotate)
             this.wall_transforms = [wall_transform_north, wall_transform_east, wall_transform_south, wall_transform_west]
         }
 

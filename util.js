@@ -1,4 +1,8 @@
+import { defs, tiny } from './examples/common.js';
 
+const {
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
+} = tiny;
 
 function componentToHex(c) {
     var hex = c.toString(16);
@@ -32,7 +36,25 @@ const util = {
     },
     rgbToHex(r, g, b) {
         return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+    },
+    
+    check_cube_with_cube_collision(player_transform, object_transform, start_points, player_points, player_size = 1, object_size = 1) {
+        let object_center = object_transform.times(vec4(0, 0, 0, 1))
+        for (let i = 0; i < player_points.length; ++i) {                
+            let point_vec = object_center.minus(player_points[i])
+            if (Math.abs(point_vec[0]) < object_size && Math.abs(point_vec[1]) < object_size && Math.abs(point_vec[2]) < object_size)
+                return true
+        }
+        let object_points = start_points.map(x => object_transform.times(x))
+        let player_center = player_transform.times(vec4(0, 0, 0, 1))
+        for (let i = 0; i < object_points.length; ++i) {                
+            let point_vec = player_center.minus(object_points[i])
+            if (Math.abs(point_vec[0]) < player_size && Math.abs(point_vec[1]) < player_size && Math.abs(point_vec[2]) < player_size)
+                return true
+        }
+        return false
     }
+
 }
 
 export default util;
