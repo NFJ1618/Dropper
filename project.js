@@ -69,6 +69,16 @@ export class Project extends Scene {
         this.depth = 1000;
         this.radius = 1;
         this.game_running = false;
+        this.start_points = [
+            vec4(1, 1, 1, 1),
+            vec4(1, 1, -1, 1),
+            vec4(1, -1, 1, 1),
+            vec4(1, -1, -1, 1),
+            vec4(-1, 1, 1, 1),
+            vec4(-1, 1, -1, 1),
+            vec4(-1, -1, 1, 1),
+            vec4(-1, -1, -1, 1),
+        ]
 
         this.initialize_game();
     }
@@ -83,9 +93,14 @@ export class Project extends Scene {
         this.initial_camera_location = Mat4.look_at(vec3(0, 0, 1), vec3(0, 0, 0), vec3(0, 1, 0));
         this.displacement = 5;
         this.box_pos = Mat4.translation(0, 0, -30);
+        this.start_depth = -30
         this.z_displacement = 0;
         this.collided_with = 0
         this.first_person = false
+        this.angle = 0
+        this.total_angle = 0
+        this.pure_box_translation = Mat4.identity()
+        this.position = vec4(0, 0, 0, 1)
         // Initialize Walls
 
         this.walls = new dropper.Walls(this.depth, this.shapes.wall, this.materials.wall)
@@ -109,6 +124,7 @@ export class Project extends Scene {
     make_control_panel() {
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
         this.key_triggered_button("PAUSE / PLAY", [" "], () => this.game_running = !this.game_running)
+        this.key_triggered_button("Perspective", ["e"], () => this.first_person = !this.first_person)
         this.new_line();
         this.new_line();
         this.key_triggered_button("Up", ["w"], () => this.thrust[1] = this.displacement, undefined, () => this.thrust[1] = 0);
@@ -118,7 +134,8 @@ export class Project extends Scene {
         this.key_triggered_button("Right", ["d"], () => this.thrust[0] = this.displacement, undefined, () => this.thrust[0] = 0);
         this.new_line();
         this.new_line();
-        this.key_triggered_button("Perspective", ["e"], () => this.first_person = !this.first_person)
+        this.key_triggered_button("Rotate left", ["f"], () => {this.angle = 5}, undefined, () => this.angle = 0)    
+        this.key_triggered_button("Rotate right", ["g"], () => {this.angle = -5}, undefined, () => this.angle = 0)    
     }
 
     calculate_health_color() {
@@ -150,9 +167,10 @@ export class Project extends Scene {
         // TODO:  Fill in matrix operations and drawing code to draw the solar system scene (Requirements 3 and 4)
         const t = program_state.animation_time / 1000,
             dt = program_state.animation_delta_time / 1000;
-        let adjust_box = Mat4.identity();
+        
 
         if (this.health <= 0) {
+            program_state.set_camera(this.initial_camera_location)
             if (t - this.time_of_death < 10) {
                 const scale_factor = 2 * Math.min(t - this.time_of_death, 5)
                 this.shapes.square.draw(
@@ -170,8 +188,16 @@ export class Project extends Scene {
 
         let displacement = 0;
         if (this.game_running) {
-            if (this.thrust[0] || this.thrust[1])
-                this.box_pos = this.box_pos.times(Mat4.translation(this.thrust[0] * dt, this.thrust[1] * dt, 0))
+            this.total_angle += this.angle
+            if (!this.first_person) {
+                this.position[0] += this.thrust[0] * dt
+                this.position[1] += this.thrust[1] * dt
+            }
+            else {
+                let third_person_thrust = Mat4.rotation(this.total_angle/100, 0, 0, 1).times(this.thrust)
+                this.position[0] += third_person_thrust[0] * dt
+                this.position[1] += third_person_thrust[1] * dt
+            }
 
             // PHYSICS [Calculate Speed]
             this.z_velocity += (constants.g - constants.drag * this.z_velocity ** 2) * dt;
@@ -195,17 +221,29 @@ export class Project extends Scene {
             displacement = this.z_velocity * dt;
         }
 
-        let center = this.box_pos.times(vec4(0, 0, 0, 1))
-        if (center[0] + this.radius > constants.WALL_SIDE_LENGTH)
-            adjust_box = adjust_box.times(Mat4.translation(constants.WALL_SIDE_LENGTH - center[0] - this.radius, 0, 0))
-        if (center[0] - this.radius < -constants.WALL_SIDE_LENGTH)
-            adjust_box = adjust_box.times(Mat4.translation(-constants.WALL_SIDE_LENGTH - center[0] + this.radius, 0, 0))
-        if (center[1] + this.radius > constants.WALL_SIDE_LENGTH)
-            adjust_box = adjust_box.times(Mat4.translation(0, constants.WALL_SIDE_LENGTH - center[1] - this.radius, 0))
-        if (center[1] - this.radius < -constants.WALL_SIDE_LENGTH)
-            adjust_box = adjust_box.times(Mat4.translation(0, -constants.WALL_SIDE_LENGTH - center[1] + this.radius, 0))
+        let initial_box_pos = Mat4.translation(this.position[0], this.position[1], this.start_depth).times(Mat4.rotation(this.total_angle/100, 0, 0, 1))
+        let player_points = this.start_points.map(x => initial_box_pos.times(x))
 
-        this.box_pos = this.box_pos.times(adjust_box);
+        let max_left = player_points[0][0], max_right = player_points[0][0], max_up = player_points[0][1], max_down = player_points[0][1]
+        for (let i = 1; i < 8; ++i) {
+            max_left = Math.min(max_left, player_points[i][0])
+            max_right = Math.max(max_right, player_points[i][0])
+            max_down = Math.min(max_down, player_points[i][1])
+            max_up = Math.max(max_up, player_points[i][1])
+        }
+        let adjust_box = Mat4.identity();
+        if (max_left < -constants.WALL_SIDE_LENGTH)
+            adjust_box = Mat4.translation(-constants.WALL_SIDE_LENGTH - max_left, 0, 0)
+        if (max_right > constants.WALL_SIDE_LENGTH)
+            adjust_box = Mat4.translation(constants.WALL_SIDE_LENGTH - max_right, 0, 0)
+        if (max_down < -constants.WALL_SIDE_LENGTH)
+            adjust_box = Mat4.translation(0, -constants.WALL_SIDE_LENGTH - max_down, 0)
+        if (max_up > constants.WALL_SIDE_LENGTH)
+            adjust_box = Mat4.translation(0, constants.WALL_SIDE_LENGTH - max_up, 0)
+
+        this.box_pos = Mat4.translation(this.position[0], this.position[1], this.start_depth)
+        this.box_pos = this.box_pos.times(adjust_box)
+        this.box_pos = this.box_pos.times(Mat4.rotation(this.total_angle/100, 0, 0, 1))
         this.box_pos_vec = this.box_pos.times(vec4(0, 0, 0, 1))
 
 
