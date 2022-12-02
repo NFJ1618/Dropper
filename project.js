@@ -34,7 +34,7 @@ export class Project extends Scene {
                 color: hex_color("#ffffff"),
                 ambient: 0.5, diffusivity: 0.1, specularity: 0.2,
                 texture: new Texture("assets/cracks.png", "NEAREST"),
-                scale: 1,
+                scale: 1, dx: 0, dy: 0,
             }),
 
             wall: new Material(new Textured_Scroll(), {
@@ -107,6 +107,8 @@ export class Project extends Scene {
         this.total_angle = 0
         this.resting = false
         this.regen_start = 0
+        this.dx = 0
+        this.dy = 0
         this.pure_box_translation = Mat4.identity()
         this.position = vec4(0, 0, 0, 1)
         // Initialize Walls
@@ -221,6 +223,8 @@ export class Project extends Scene {
             while (this.collided_with > 0) {
                 if (!this.resting) {
                     this.health -= (50 * this.z_velocity) / constants.terminal_velocity;
+                    this.dx = Math.random() * 0.6
+                    this.dy = Math.random() * 0.6
                 }
                 // DO INELASTIC COLLISION SIMULATION
                 this.z_velocity = Math.sqrt(this.z_velocity);
@@ -294,7 +298,11 @@ export class Project extends Scene {
                 context,
                 program_state,
                 this.box_pos,//.times(Mat4.rotation(Math.PI, 1, 0, 0)),
-                this.materials.player.override({scale: 5 * Math.pow((0.01 * (100 - this.health)), 2)})
+                this.materials.player.override({
+                    scale: 5 * Math.pow((0.01 * (100 - this.health)), 2),
+                    dx: this.dx,
+                    dy: this.dy,
+                })
             )
         }
         else {
@@ -393,10 +401,12 @@ class Dynamic_Texture extends defs.Textured_Phong {
             uniform sampler2D texture;
             uniform float animation_time;
             uniform float scale;
+            uniform float dx;
+            uniform float dy;
             
             void main(){
                 // Sample the texture image in the correct place:
-                vec2 translated_tex_coord = vec2(f_tex_coord.x * 0.3, f_tex_coord.y * 0.3);  
+                vec2 translated_tex_coord = vec2(dx + f_tex_coord.x * 0.3, dy + f_tex_coord.y * 0.3);  
                 vec4 tex_color = texture2D( texture, translated_tex_coord);
 
                 

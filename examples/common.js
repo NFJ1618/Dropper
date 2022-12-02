@@ -771,6 +771,8 @@ const Textured_Phong = defs.Textured_Phong =
             context.uniform1f(gpu_addresses.animation_time, gpu_state.animation_time);
             context.uniform1f(gpu_addresses.displacement, material.displacement);
             context.uniform1f(gpu_addresses.scale, material.scale);
+            context.uniform1f(gpu_addresses.dx, material.dx);
+            context.uniform1f(gpu_addresses.dy, material.dy);
             if (material.texture && material.texture.ready) {
                 // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
                 context.uniform1i(gpu_addresses.texture, 0);
