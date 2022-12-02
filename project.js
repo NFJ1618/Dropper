@@ -21,6 +21,7 @@ export class Project extends Scene {
             sphere: new defs.Subdivision_Sphere(4),
             circle: new defs.Regular_2D_Polygon(1, 15),
             wall: new defs.Cube(),
+            player: new defs.Cube(),
             square: new defs.Cube(),
             windmill: new defs.Windmill(),
             // TODO:  Fill in as many additional shape instances as needed in this key/value table.
@@ -45,10 +46,11 @@ export class Project extends Scene {
 
         // *** Materials
         this.materials = {
-            player: new Material(new defs.Textured_Phong(), {
-                color: hex_color("#ffff00"),
-                ambient: 0.4, diffusivity: 0.1, specularity: 0.1,
-                texture: new Texture("assets/smiley.jpg", "NEAREST")
+            player: new Material(new Dynamic_Texture(), {
+                color: hex_color("#ffffff"),
+                ambient: 0.5, diffusivity: 0.1, specularity: 0.2,
+                texture: new Texture("assets/cracks.png", "NEAREST"),
+                scale: 1,
             }),
 
             wall: new Material(new Textured_Scroll(), {
@@ -230,7 +232,7 @@ export class Project extends Scene {
             if (this.z_velocity > 0) {
                 if (this.resting) this.regen_start = t;
                 this.resting = false;
-                if (t - this.regen_start > 5) this.health += 0.0001 * ((100 - this.health) * 1)
+                if (t - this.regen_start > 1) this.health += 0.0005 * (100 - this.health)
                 this.health = Math.min(this.health, 100);
             }
 
@@ -282,11 +284,11 @@ export class Project extends Scene {
         // DRAW PLAYER
         if (!this.first_person) {
             program_state.set_camera(this.initial_camera_location)
-            this.shapes.square.draw(
+            this.shapes.player.draw(
                 context,
                 program_state,
                 this.box_pos,//.times(Mat4.rotation(Math.PI, 1, 0, 0)),
-                this.materials.player//.override({color: white})//this.calculate_health_color()})
+                this.materials.player.override({scale: 5 * Math.pow((0.01 * (100 - this.health)), 2)})
             )
         }
         else {
@@ -301,7 +303,7 @@ export class Project extends Scene {
             this.score++;
             this.difficulty += .002;
             const last_pos = this.platforms[this.platforms.length-1].position + displacement
-            const next_pos = last_pos - (Math.pow((1 - this.difficulty), 3) * 300)
+            const next_pos = last_pos - (Math.pow((1 - this.difficulty), 2) * 300)
             console.log((last_pos - next_pos), this.difficulty)
             if (this.difficulty >= .8) this.difficulty = .5;
             this.platforms.push(new dropper.UniformScatterPlatform(next_pos, this.shapes.square, this.difficulty,
@@ -336,6 +338,29 @@ export class Project extends Scene {
                 })
             )
         }
+    }
+}
+
+class Dynamic_Texture extends defs.Textured_Phong {
+    fragment_glsl_code() {
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time;
+            uniform float scale;
+            
+            void main(){
+                // Sample the texture image in the correct place:
+                vec2 translated_tex_coord = vec2(f_tex_coord.x * 0.3, f_tex_coord.y * 0.3);  
+                vec4 tex_color = texture2D( texture, translated_tex_coord);
+
+                
+                if( tex_color.w < .01 ) discard;
+                                                                         // Compute an initial (ambient) color:
+                gl_FragColor = vec4( ( tex_color.xyz * scale + shape_color.xyz * (1.0 - scale)) * ambient, shape_color.w * tex_color.w ); 
+                                                                         // Compute the final color with contributions from lights:
+                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+        } `;
     }
 }
 
