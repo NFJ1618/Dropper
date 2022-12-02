@@ -294,13 +294,15 @@ export class Project extends Scene {
                 const shapePackage = platform.shapePackages[j];
 
                 let object_start = Mat4.translation(shapePackage.xTranslation, shapePackage.yTranslation, platform.position + displacement + shapePackage.zTranslation)
-                let object_pos = object_start.times(vec4(0, 0, 0, 1))
+                //let object_pos = object_start.times(vec4(0, 0, 0, 1)
                 if (platform.material() == null)
                     platform.shapes[shapePackage.shapeIndex].draw(context, program_state, object_start, this.materials.test)
                 else
                     platform.shapes[shapePackage.shapeIndex].draw(context, program_state, object_start, platform.material())
-                if (util.check_square_with_square_collision(this.box_pos_vec, this.radius, object_pos, 1))
+                if (util.check_cube_with_cube_collision(this.box_pos, object_start, this.start_points, player_points)) {
                     this.collided_with += 1
+                }
+                    
             }
             platform.position += displacement
         }
