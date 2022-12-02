@@ -305,23 +305,23 @@ export class Project extends Scene {
         }
         
 
-        if (this.platforms.length === 0) {
+        if (this.platforms.length < 3) {
             this.score++;
             this.difficulty += .002;
-            // const last_pos = this.platforms[this.platforms.length-1].position + displacement
-            // const next_pos = last_pos - (Math.pow((1 - this.difficulty), 2) * 300)
+            const last_pos = this.platforms[this.platforms.length-1].position + displacement
+            const next_pos = last_pos - (Math.pow((1 - this.difficulty), 2) * 300)
             // console.log((last_pos - next_pos), this.difficulty)
             if (this.difficulty >= .8) this.difficulty = .5;
 
             let random = Math.floor(9 * Math.random()) + 1;
             if (random < 4) {
-                this.platforms.push(new dropper.UniformScatterPlatform(this.spawn_pos, this.shapes.square, this.difficulty,
+                this.platforms.push(new dropper.UniformScatterPlatform(next_pos, this.shapes.square, this.difficulty,
                     this.dynamicMaterials.uniformColor(this.materials.platform)));
             } else if (random < 8) {
-                this.platforms.push(new dropper.VaryingDepthScatterPlatform(this.spawn_pos, this.shapes.square, this.difficulty,
+                this.platforms.push(new dropper.VaryingDepthScatterPlatform(next_pos, this.shapes.square, this.difficulty,
                     this.dynamicMaterials.uniformColor(this.materials.platform), 3));
             } else {
-                this.platforms.push(new dropper.NHolesPlatform(this.spawn_pos, this.shapes.square, this.dynamicMaterials.uniformColor(this.materials.platform), 3, 3));
+                this.platforms.push(new dropper.NHolesPlatform(next_pos, this.shapes.square, this.dynamicMaterials.uniformColor(this.materials.platform), 3, 3));
             }
 
         }
