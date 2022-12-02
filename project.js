@@ -157,9 +157,18 @@ export class Project extends Scene {
             this.score++;
             this.difficulty += .0020;
             if (this.difficulty >= .8) this.difficulty = .5;
-            // this.platforms.push(new dropper.VaryingDepthScatterPlatform(this.spawn_pos, this.shapes.square, this.difficulty,
-            //     this.dynamicMaterials.uniformColor(this.materials.platform), 3))
-            this.platforms.push(new dropper.NHolesPlatform(this.spawn_pos, this.shapes.square, this.dynamicMaterials.uniformColor(this.materials.platform), 3, 3));
+
+            let random = Math.floor(9 * Math.random()) + 1;
+            if (random < 4) {
+                this.platforms.push(new dropper.UniformScatterPlatform(this.spawn_pos, this.shapes.square, this.difficulty,
+                    this.dynamicMaterials.uniformColor(this.materials.platform)));
+            } else if (random < 8) {
+                this.platforms.push(new dropper.VaryingDepthScatterPlatform(this.spawn_pos, this.shapes.square, this.difficulty,
+                    this.dynamicMaterials.uniformColor(this.materials.platform), 3));
+            } else {
+                this.platforms.push(new dropper.NHolesPlatform(this.spawn_pos, this.shapes.square, this.dynamicMaterials.uniformColor(this.materials.platform), 3, 3));
+            }
+
         }
 
         // render platforms
