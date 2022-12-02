@@ -32,7 +32,24 @@ const util = {
     },
     rgbToHex(r, g, b) {
         return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+    },
+    
+    check_square_with_square_collision(square_1_center, square_1_radius, square_2_center, square_2_radius) {
+            let z_distance = square_1_center[2] - square_2_center[2]
+            if (Math.abs(z_distance) > square_1_radius + square_2_radius)
+                return false
+            
+            let y_distance = square_1_center[1] - square_2_center[1]
+            if (Math.abs(y_distance) > square_1_radius + square_2_radius)
+                return false
+
+            let x_distance = square_1_center[0] - square_2_center[0]
+            if (Math.abs(x_distance) > square_1_radius + square_2_radius)
+                return false
+
+            return true
     }
+
 }
 
 export default util;
