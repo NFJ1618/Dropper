@@ -59,6 +59,8 @@ export class Project extends Scene {
         this.key_triggered_button("Left", ["a"], () => this.thrust[0] = -this.displacement, undefined, () => this.thrust[0] = 0);
         this.key_triggered_button("Down", ["s"], () => this.thrust[1] = -this.displacement, undefined, () => this.thrust[1] = 0);
         this.key_triggered_button("Right", ["d"], () => this.thrust[0] = this.displacement, undefined, () => this.thrust[0] = 0);
+        this.new_line();
+        this.new_line();
         this.key_triggered_button("Perspective", ["e"], () => this.first_person = !this.first_person)
         this.new_line();
     }
