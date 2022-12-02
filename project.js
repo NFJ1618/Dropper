@@ -84,7 +84,8 @@ export class Project extends Scene {
         this.displacement = 5;
         this.box_pos = Mat4.translation(0, 0, -30);
         this.z_displacement = 0;
-
+        this.collided_with = 0
+        this.first_person = false
         // Initialize Walls
 
         this.walls = new dropper.Walls(this.depth, this.shapes.wall, this.materials.wall)
@@ -108,12 +109,16 @@ export class Project extends Scene {
     make_control_panel() {
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
         this.key_triggered_button("PAUSE / PLAY", [" "], () => this.game_running = !this.game_running)
+        this.new_line();
+        this.new_line();
         this.key_triggered_button("Up", ["w"], () => this.thrust[1] = this.displacement, undefined, () => this.thrust[1] = 0);
         this.new_line();
         this.key_triggered_button("Left", ["a"], () => this.thrust[0] = -this.displacement, undefined, () => this.thrust[0] = 0);
         this.key_triggered_button("Down", ["s"], () => this.thrust[1] = -this.displacement, undefined, () => this.thrust[1] = 0);
         this.key_triggered_button("Right", ["d"], () => this.thrust[0] = this.displacement, undefined, () => this.thrust[0] = 0);
         this.new_line();
+        this.new_line();
+        this.key_triggered_button("Perspective", ["e"], () => this.first_person = !this.first_person)
     }
 
     calculate_health_color() {
@@ -173,7 +178,7 @@ export class Project extends Scene {
 
             // COLLISION CHECKING AND DAMAGE
             // Call Collision Checker
-            if (proxy_collision_checker()) {
+            while (this.collided_with > 0) {
                 this.health -= (50 * this.z_velocity) / constants.terminal_velocity;
                 // DO INELASTIC COLLISION SIMULTAION
                 this.z_velocity = 0;
@@ -182,6 +187,8 @@ export class Project extends Scene {
                     this.time_of_death = t;
                     this.game_running = false;
                 }
+                
+                this.collided_with -= 1
             }
 
 
@@ -199,6 +206,7 @@ export class Project extends Scene {
             adjust_box = adjust_box.times(Mat4.translation(0, -constants.WALL_SIDE_LENGTH - center[1] + this.radius, 0))
 
         this.box_pos = this.box_pos.times(adjust_box);
+        this.box_pos_vec = this.box_pos.times(vec4(0, 0, 0, 1))
 
 
         // TODO: Lighting (Requirement 2)
@@ -216,12 +224,19 @@ export class Project extends Scene {
         //let wall_transform_y = base_transform.times(Mat4.rotation(Math.PI/2, 0, 1, 0))
 
         // DRAW PLAYER
-        this.shapes.square.draw(
-            context,
-            program_state,
-            this.box_pos,//.times(Mat4.rotation(Math.PI, 1, 0, 0)),
-            this.materials.player//.override({color: white})//this.calculate_health_color()})
-        )
+        if (!this.first_person) {
+            program_state.set_camera(this.initial_camera_location)
+            this.shapes.square.draw(
+                context,
+                program_state,
+                this.box_pos,//.times(Mat4.rotation(Math.PI, 1, 0, 0)),
+                this.materials.player//.override({color: white})//this.calculate_health_color()})
+            )
+        }
+        else {
+            program_state.set_camera(Mat4.inverse(this.box_pos)) // might be slow, optimize by modifying position in camera space instead
+        }
+        
 
 
         this.platforms = this.platforms.filter(x => x.position < 10)
@@ -241,10 +256,13 @@ export class Project extends Scene {
                 const shapePackage = platform.shapePackages[j];
 
                 let object_start = Mat4.translation(shapePackage.xTranslation, shapePackage.yTranslation, platform.position + displacement + shapePackage.zTranslation)
+                let object_pos = object_start.times(vec4(0, 0, 0, 1))
                 if (platform.material() == null)
                     platform.shapes[shapePackage.shapeIndex].draw(context, program_state, object_start, this.materials.test)
                 else
                     platform.shapes[shapePackage.shapeIndex].draw(context, program_state, object_start, platform.material())
+                if (util.check_square_with_square_collision(this.box_pos_vec, this.radius, object_pos, 1))
+                    this.collided_with += 1
             }
             platform.position += displacement
         }
