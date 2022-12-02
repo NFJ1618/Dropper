@@ -233,13 +233,13 @@ export class Project extends Scene {
         }
         let adjust_box = Mat4.identity();
         if (max_left < -constants.WALL_SIDE_LENGTH)
-            adjust_box = Mat4.translation(-constants.WALL_SIDE_LENGTH - max_left, 0, 0)
+            adjust_box = adjust_box.times(Mat4.translation(-constants.WALL_SIDE_LENGTH - max_left, 0, 0))
         if (max_right > constants.WALL_SIDE_LENGTH)
-            adjust_box = Mat4.translation(constants.WALL_SIDE_LENGTH - max_right, 0, 0)
+            adjust_box = adjust_box.times(Mat4.translation(constants.WALL_SIDE_LENGTH - max_right, 0, 0))
         if (max_down < -constants.WALL_SIDE_LENGTH)
-            adjust_box = Mat4.translation(0, -constants.WALL_SIDE_LENGTH - max_down, 0)
+            adjust_box = adjust_box.times(Mat4.translation(0, -constants.WALL_SIDE_LENGTH - max_down, 0))
         if (max_up > constants.WALL_SIDE_LENGTH)
-            adjust_box = Mat4.translation(0, constants.WALL_SIDE_LENGTH - max_up, 0)
+            adjust_box = adjust_box.times(Mat4.translation(0, constants.WALL_SIDE_LENGTH - max_up, 0))
 
         this.box_pos = Mat4.translation(this.position[0], this.position[1], this.start_depth)
         this.box_pos = this.box_pos.times(adjust_box)
