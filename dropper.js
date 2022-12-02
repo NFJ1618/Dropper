@@ -72,6 +72,7 @@ const Platform = dropper.Platform =
             this.shapes = shapes;
             this.position = start_Pos;
             this.shapePackages = [];
+            this.hasCollided = false;
         }
         generate() { throw Error("this should be overridden") }
         collide(x, y, z_velocity) {
@@ -83,14 +84,14 @@ const Platform = dropper.Platform =
                 let xDiff = shape.x - x;
                 let yDiff = shape.y - y;
                 let distance = Math.pow(Math.pow(xDiff, 2) + Math.pow(yDiff, 2), .5);
-                let factor = 5 * Math.pow(1 / distance, 2);
+                let factor = Math.abs(20 * Math.pow(1 / distance, 4));
 
                 let xFactor = xDiff / distance;
                 let yFactor = yDiff / distance;
 
-                shape.x_velocity = xFactor * factor * 7.5 + 15 * Math.random() - 7.5;
-                shape.y_velocity = yFactor * factor * 7.5 + 15 * Math.random() - 7.5;
-                shape.z_velocity = (-.75 * z_velocity * factor) + 85;
+                shape.x_velocity = xFactor * factor * 5 + 15 * Math.random() - 7.5;
+                shape.y_velocity = yFactor * factor * 5 + 15 * Math.random() - 7.5;
+                shape.z_velocity = (-1 * z_velocity * factor) + 85;
 
                 shape.x_rotationSpeed = 2 * Math.PI * Math.random() + Math.PI;
                 shape.y_rotationSpeed = 2 * Math.PI * Math.random() + Math.PI;

@@ -223,7 +223,7 @@ export class Project extends Scene {
                     this.health -= (50 * this.z_velocity) / constants.terminal_velocity;
                 }
                 // DO INELASTIC COLLISION SIMULATION
-                this.z_velocity = 0;
+                this.z_velocity = Math.sqrt(this.z_velocity);
                 this.resting = true;
 
                 if (this.health <= 0) {
@@ -285,15 +285,6 @@ export class Project extends Scene {
         //let wall_transform_x = model_transform.times(Mat4.scale(1, 10, 10))
         //let wall_transform_y = base_transform.times(Mat4.rotation(Math.PI/2, 0, 1, 0))
 
-        let collided = this.platforms.filter(x => x.position >= -30);
-        if (collided.length > 0) {
-            let { x, y } = this.getPlayerPosition(this.box_pos);
-            for (let i = 0; i < collided.length; i++) {
-                collided[i].collide(x, y, z_velocity);
-            }
-        }
-        this.collidedPlatforms = this.collidedPlatforms.concat(collided);
-        this.platforms = this.platforms.filter(x => x.position < -30);
         // DRAW PLAYER
         if (!this.first_person) {
             let desired = this.initial_camera_location
@@ -314,12 +305,12 @@ export class Project extends Scene {
         }
         
 
-        if (this.platforms.length <= 3) {
+        if (this.platforms.length === 0) {
             this.score++;
             this.difficulty += .002;
-            const last_pos = this.platforms[this.platforms.length-1].position + displacement
-            const next_pos = last_pos - (Math.pow((1 - this.difficulty), 2) * 300)
-            console.log((last_pos - next_pos), this.difficulty)
+            // const last_pos = this.platforms[this.platforms.length-1].position + displacement
+            // const next_pos = last_pos - (Math.pow((1 - this.difficulty), 2) * 300)
+            // console.log((last_pos - next_pos), this.difficulty)
             if (this.difficulty >= .8) this.difficulty = .5;
 
             let random = Math.floor(9 * Math.random()) + 1;
@@ -347,13 +338,24 @@ export class Project extends Scene {
                     platform.shapes[shapePackage.shapeIndex].draw(context, program_state, object_start, this.materials.test)
                 else
                     platform.shapes[shapePackage.shapeIndex].draw(context, program_state, object_start, platform.material())
-                if (util.check_cube_with_cube_collision(this.box_pos, object_start, this.start_points, player_points)) {
-                    this.collided_with += 1
+                if (platform.hasCollided === false && util.check_cube_with_cube_collision(this.box_pos, object_start, this.start_points, player_points)) {
+                    platform.hasCollided = true;
+                    this.collided_with++;
                 }
-                    
             }
             platform.position += displacement
         }
+        
+        // change filter 
+        let collided = this.platforms.filter(x => x.hasCollided === true);
+        if (collided.length > 0) {
+            let { x, y } = this.getPlayerPosition(this.box_pos);
+            for (let i = 0; i < collided.length; i++) {
+                collided[i].collide(x, y, this.z_velocity);
+            }
+        }
+        this.collidedPlatforms = this.collidedPlatforms.concat(collided);
+        this.platforms = this.platforms.filter(x => x.position < 10 && x.hasCollided === false);
 
         // render collided platforms
         for (let i = 0; i < this.collidedPlatforms.length; i++) {
