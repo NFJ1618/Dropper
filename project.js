@@ -105,6 +105,7 @@ export class Project extends Scene {
         this.angle = 0
         this.total_angle = 0
         this.resting = false
+        this.regen_start = 0
         this.pure_box_translation = Mat4.identity()
         this.position = vec4(0, 0, 0, 1)
         // Initialize Walls
@@ -175,10 +176,10 @@ export class Project extends Scene {
             dt = program_state.animation_delta_time / 1000;
         
 
-        if (this.health <= 0) {
+        if (this.health <= 0 && t - this.time_of_death > 1) {
             program_state.set_camera(this.initial_camera_location)
             if (t - this.time_of_death < 10) {
-                const scale_factor = 2 * Math.min(t - this.time_of_death, 5)
+                const scale_factor = 2 * Math.min(t - this.time_of_death - 1, 5)
                 this.shapes.square.draw(
                     context,
                     program_state,
@@ -212,10 +213,9 @@ export class Project extends Scene {
             // Call Collision Checker
 
             while (this.collided_with > 0) {
-                if (!this.resting)
+                if (!this.resting) {
                     this.health -= (50 * this.z_velocity) / constants.terminal_velocity;
-
-                console.log(this.collided_with)
+                }
                 // DO INELASTIC COLLISION SIMULATION
                 this.z_velocity = 0;
                 this.resting = true;
@@ -228,10 +228,12 @@ export class Project extends Scene {
             }
 
             if (this.z_velocity > 0) {
+                if (this.resting) this.regen_start = t;
                 this.resting = false;
+                if (t - this.regen_start > 5) this.health += 0.0001 * ((100 - this.health) * 1)
+                this.health = Math.min(this.health, 100);
             }
 
-            this.health = Math.min(this.health + constants.regeneration, 100)
             displacement = this.z_velocity * dt;
         }
 
