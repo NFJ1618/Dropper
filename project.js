@@ -63,6 +63,11 @@ export class Project extends Scene {
                 ambient: 1, diffusivity: 0, specularity: 0,
                 texture: new Texture("assets/wasted.png", "NEAREST"),
             }),
+
+            platform: new Material(new defs.Phong_Shader(), {
+                ambient: 0.4, diffusivity: 0.2, specularity: 0.6,
+                color: hex_color("#ffffff")
+            })
         }
 
         this.difficulty = .1;
@@ -99,6 +104,7 @@ export class Project extends Scene {
         this.first_person = false
         this.angle = 0
         this.total_angle = 0
+        this.resting = false
         this.pure_box_translation = Mat4.identity()
         this.position = vec4(0, 0, 0, 1)
         // Initialize Walls
@@ -204,22 +210,32 @@ export class Project extends Scene {
 
             // COLLISION CHECKING AND DAMAGE
             // Call Collision Checker
+
             while (this.collided_with > 0) {
-                this.health -= (50 * this.z_velocity) / constants.terminal_velocity;
-                // DO INELASTIC COLLISION SIMULTAION
+                if (!this.resting)
+                    this.health -= (50 * this.z_velocity) / constants.terminal_velocity;
+
+                console.log(this.collided_with)
+                // DO INELASTIC COLLISION SIMULATION
                 this.z_velocity = 0;
+                this.resting = true;
 
                 if (this.health <= 0) {
                     this.time_of_death = t;
                     this.game_running = false;
                 }
-                
                 this.collided_with -= 1
+            }
+
+            if (this.z_velocity > 0) {
+                this.resting = false;
             }
 
             this.health = Math.min(this.health + constants.regeneration, 100)
             displacement = this.z_velocity * dt;
         }
+
+
 
         let initial_box_pos = Mat4.translation(this.position[0], this.position[1], this.start_depth).times(Mat4.rotation(this.total_angle/100, 0, 0, 1))
         let player_points = this.start_points.map(x => initial_box_pos.times(x))
@@ -279,11 +295,14 @@ export class Project extends Scene {
 
         this.platforms = this.platforms.filter(x => x.position < 10)
 
-        if (this.platforms.length === 0) {
+        if (this.platforms.length <= 3) {
             this.score++;
-            this.difficulty += .0020;
+            this.difficulty += .002;
+            const last_pos = this.platforms[this.platforms.length-1].position + displacement
+            const next_pos = last_pos - (Math.pow((1 - this.difficulty), 3) * 300)
+            console.log((last_pos - next_pos), this.difficulty)
             if (this.difficulty >= .8) this.difficulty = .5;
-            this.platforms.push(new dropper.UniformScatterPlatform(this.spawn_pos, this.shapes.square, this.difficulty,
+            this.platforms.push(new dropper.UniformScatterPlatform(next_pos, this.shapes.square, this.difficulty,
                 this.dynamicMaterials.uniformColor(.4, .6, .2)))
         }
 
