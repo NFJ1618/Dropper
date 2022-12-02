@@ -24,26 +24,14 @@ export class Project extends Scene {
             //        (Requirement 1)s
         };
 
-        this.dynamicMaterials = {
-            uniformColor: function (ambient, diffusivity, specularity) {
-                const color = util.generateColor();
-                const material = new Material(new defs.Phong_Shader(), { ambient: ambient, diffusivity: diffusivity, specularity: specularity, color: hex_color(color) });
-                return () => material;
-            },
-            uniformDullColor: function (ambient, diffusivity, specularity) {
-                const rgb = util.hsvToRgb(Math.random(), .6, 1)
-                const hex = util.rgbToHex(rgb[0], rgb[1], rgb[2]);
-                const colorVec = hex_color(hex);
-                const material = new Material(new defs.Phong_Shader(), { ambient: ambient, diffusivity: diffusivity, specularity: specularity, color: colorVec });
-                return () => material;
-            },
-
-        }
-
         // *** Materials
         this.materials = {
             test: new Material(new defs.Phong_Shader(),
                 { ambient: .2, diffusivity: .6, specularity: .4, color: hex_color("#ffffff") }),
+            platform: new Material(new defs.Phong_Shader(),
+                { ambient: .4, diffusivity: .6, specularity: .2, color: hex_color("#ffffff") }),
+            wall: new Material(new defs.Phong_Shader(),
+                { ambient: .4, diffusivity: .1, specularity: 0, color: hex_color("#ffffff") }),
             // test2: new Material(new Gouraud_Shader(),
             //     {ambient: .4, diffusivity: .6, color: hex_color("#992828")}),
             // ring: new Material(new Ring_Shader()),
@@ -51,18 +39,33 @@ export class Project extends Scene {
             //        (Requirement 4)
 
         }
+        this.dynamicMaterials = {
+            uniformColor: function (baseMaterial) {
+                const color = util.generateColor();
+                const material = baseMaterial.override({ color: hex_color(color) });
+                return () => material;
+            },
+            uniformDullColor: function (baseMaterial) {
+                const rgb = util.hsvToRgb(Math.random(), .6, 1)
+                const hex = util.rgbToHex(rgb[0], rgb[1], rgb[2]);
+                const colorVec = hex_color(hex);
+                const material = baseMaterial.override({ color: colorVec });
+                return () => material;
+            },
+
+        }
 
         this.score = 0;
         this.difficulty = .1;
         this.depth = 1000
         this.radius = 1
-        this.walls = new dropper.Walls(this.depth, this.shapes.square, this.dynamicMaterials.uniformDullColor(.4, 1, 0))
+        this.walls = new dropper.Walls(this.depth, this.shapes.square, this.dynamicMaterials.uniformDullColor(this.materials.wall))
         // look straight down at negative z, up is y, right is x
         this.initial_camera_location = Mat4.look_at(vec3(0, 0, 1), vec3(0, 0, 0), vec3(0, 1, 0));
         this.spawn_pos = -300
         this.initial_velocity = 0
         this.platforms = [new dropper.UniformScatterPlatform(this.spawn_pos, this.shapes.square,
-            this.difficulty, this.dynamicMaterials.uniformColor(.4, .6, .2))]
+            this.difficulty, this.dynamicMaterials.uniformColor(this.materials.platform))]
         this.thrust = vec4(0, 0, 0, 0)
         this.displacement = 5
         this.box_pos = Mat4.translation(0, 0, -30)
@@ -142,8 +145,9 @@ export class Project extends Scene {
             this.score++;
             this.difficulty += .0020;
             if (this.difficulty >= .8) this.difficulty = .5;
-            this.platforms.push(new dropper.UniformScatterPlatform(this.spawn_pos, this.shapes.square, this.difficulty,
-                this.dynamicMaterials.uniformColor(.4, .6, .2)))
+            // this.platforms.push(new dropper.VaryingDepthScatterPlatform(this.spawn_pos, this.shapes.square, this.difficulty,
+            //     this.dynamicMaterials.uniformColor(this.materials.platform), 3))
+            this.platforms.push(new dropper.NHolesPlatform(this.spawn_pos,  this.shapes.square, this.dynamicMaterials.uniformColor(this.materials.platform), 3, 3));
         }
 
         for (let i = 0; i < this.platforms.length; ++i) {

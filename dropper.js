@@ -82,6 +82,46 @@ const UniformScatterPlatform = dropper.UniformScatterPlatform =
          * @param {*} depth - how far the platform goes on z axis
          * @param {*} fill - float between 0 and 1, determines density of platform
          */
+        constructor(start_Pos, shape, fill, material = () => null) {
+            super(start_Pos, Array(shape))
+            // create shapePackages
+            this.material = material;
+            this.generateShapePackages(1, fill);
+        }
+        generateShapePackages(depth, fill) {
+            // calculate inner wall length and height
+            const length = constants.WALL_SIDE_LENGTH * 2;
+            const shapePackages = [];
+
+            let numOfBlocks = 0;
+            // goes for certian depth
+            for (let x = 0; x < length; x++) {
+                // go row by row
+                for (let y = 0; y < length; y++) {
+                    // run random
+                    let z = Math.floor(Math.random() * depth) + 1;
+                    // console.log(z);
+                    // has to meet threshold
+                    if (Math.random() <= fill) {
+                        numOfBlocks++;
+                        // create shape packages
+                        shapePackages.push(new ShapeDrawPackage(0, x - length / 2, y - length / 2, z, 0));
+                    }
+                }
+            }
+            this.shapePackages = shapePackages;
+        }
+    }
+
+const VaryingDepthScatterPlatform = dropper.VaryingDepthScatterPlatform =
+    class VaryingDepthScatterPlatform extends Platform {
+        /**
+         * 
+         * @param {*} start_Pos 
+         * @param {*} unitShapes 
+         * @param {*} depth - how far the platform goes on z axis
+         * @param {*} fill - float between 0 and 1, determines density of platform
+         */
         constructor(start_Pos, shape, fill, material = () => null, depth = 1) {
             super(start_Pos, Array(shape))
             // create shapePackages
@@ -94,24 +134,77 @@ const UniformScatterPlatform = dropper.UniformScatterPlatform =
             const shapePackages = [];
 
             let numOfBlocks = 0;
-            for (let z = 0; z < depth; z++) {
-                // goes for certian depth
-                for (let x = 0; x < length; x++) {
-                    // go row by row
-                    for (let y = 0; y < length; y++) {
-                        // run random
-                        // has to meet threshold
-                        if (Math.random() <= fill) {
-                            numOfBlocks++;
-                            // create shape packages
-                            shapePackages.push(new ShapeDrawPackage(0, x - length / 2, y - length / 2, z, 0));
-                        }
+            // goes for certian depth
+            for (let x = 0; x < length; x++) {
+                // go row by row
+                for (let y = 0; y < length; y++) {
+                    // run random
+                    let z = Math.floor(Math.random() * depth) + 1;
+                    z = z * 10;
+                    // console.log(z);
+                    // has to meet threshold
+                    if (Math.random() <= fill) {
+                        numOfBlocks++;
+                        // create shape packages
+                        shapePackages.push(new ShapeDrawPackage(0, x - length / 2, y - length / 2, z, 0));
                     }
                 }
             }
             this.shapePackages = shapePackages;
         }
     }
+
+const NHolesPlatform = dropper.NHolesPlatform =
+    class NHolesPlatform extends Platform {
+        constructor(start_Pos, shape, material = () => null, numHoles, additionalHoleLength = 0) {
+            super(start_Pos, Array(shape))
+            // create shapePackages
+            this.material = material;
+            this.generateShapePackages(numHoles, additionalHoleLength);
+        }
+        generateShapePackages(numHoles, additionalHoleLength) {
+            // calculate inner wall length and height
+            const length = constants.WALL_SIDE_LENGTH * 2;
+            const shapePackages = [];
+
+            let holes = [];
+            for (let i = 0; i < numHoles; i++) {
+                let size = Math.floor(Math.random() * additionalHoleLength) + 4;
+                holes.push({
+                    x: Math.floor(Math.random() * length),
+                    y: Math.floor(Math.random() * length),
+                    size: size,
+                });
+            }
+
+            // goes for certian depth
+            for (let x = 0; x < length; x++) {
+                // go row by row
+                for (let y = 0; y < length; y++) {
+                    // run random
+                    let onHole = false;
+                    let xPos = x - length / 2;
+                    let yPos = y - length / 2;
+                    for (let i = 0; i < numHoles; i++) {
+                        // check if this xy coord is on a hole
+                        let hole = holes[i];
+                        let xMin = hole.x - length / 2 - hole.size / 2;
+                        let xMax = hole.x - length / 2 + hole.size / 2;
+                        let yMin = hole.y - length / 2 - hole.size / 2;
+                        let yMax = hole.y - length / 2 + hole.size / 2;
+
+                        if (xPos >= xMin && xPos <= xMax && yPos >= yMin && yPos <= yMax) onHole = true;
+                    }
+                    if (!onHole) {
+                        shapePackages.push(new ShapeDrawPackage(0, xPos, yPos, 0, 0));
+                    }
+
+                }
+            }
+            this.shapePackages = shapePackages;
+        }
+    }
+
 
 const Movement_Controls = dropper.Movement_Controls =
     class Movement_Controls extends Scene {
