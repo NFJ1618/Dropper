@@ -217,7 +217,7 @@ export class Project extends Scene {
                 this.collided_with -= 1
             }
 
-
+            this.health = Math.min(this.health + constants.regeneration, 100)
             displacement = this.z_velocity * dt;
         }
 
