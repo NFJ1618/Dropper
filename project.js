@@ -186,8 +186,8 @@ export class Project extends Scene {
 
         if (this.health <= 0 && t - this.time_of_death > 1) {
             program_state.set_camera(this.initial_camera_location)
-            if (t - this.time_of_death < 10) {
-                const scale_factor = 2 * Math.min(t - this.time_of_death - 1, 5)
+            if (t - this.time_of_death < 4) {
+                const scale_factor = 5 * Math.min(t - this.time_of_death - 1, 2)
                 this.shapes.square.draw(
                     context,
                     program_state,
@@ -399,7 +399,6 @@ class Dynamic_Texture extends defs.Textured_Phong {
         return this.shared_glsl_code() + `
             varying vec2 f_tex_coord;
             uniform sampler2D texture;
-            uniform float animation_time;
             uniform float scale;
             uniform float dx;
             uniform float dy;
