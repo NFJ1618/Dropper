@@ -54,12 +54,14 @@ const ShapeDrawPackage = dropper.ShapeDrawPackage =
          * @param {*} zRotation 
          * @param {*} material THIS IS A FUNCTION, this is so that we dont duplicate a shit load of memory
          */
-        constructor(shapeIndex, xTranslation = 0, yTranslation = 0, zTranslation = 0, zRotation = 0) {
+        constructor(shapeIndex, xTranslation = 0, yTranslation = 0, zTranslation = 0, xRotation = 0, yRotation = 0, zRotation = 0) {
             this.shapeIndex = shapeIndex;
-            this.xTranslation = xTranslation;
-            this.yTranslation = yTranslation;
-            this.zTranslation = zTranslation;
-            this.zRotation = zRotation;
+            this.x = xTranslation;
+            this.y = yTranslation;
+            this.z = zTranslation;
+            this.xRot = xRotation;
+            this.yRot = yRotation;
+            this.zRot = zRotation;
         }
     }
 
@@ -71,6 +73,55 @@ const Platform = dropper.Platform =
             this.shapePackages = [];
         }
         generate() { throw Error("this should be overridden") }
+        collide(x, y, z_velocity) {
+            // set each package to a velocity vector and angular velocity
+            this.iterations = 1; // seconds
+            for (let i = 0; i < this.shapePackages.length; i++) {
+                let shape = this.shapePackages[i];
+                // calculate distance from place
+                let xDiff = shape.x - x;
+                let yDiff = shape.y - y;
+                let distance = Math.pow(Math.pow(xDiff, 2) + Math.pow(yDiff, 2), .5);
+                let factor = 5 * Math.pow(1 / distance, 2);
+
+                let xFactor = xDiff / distance;
+                let yFactor = yDiff / distance;
+
+                shape.x_velocity = xFactor * factor * 7.5 + 15 * Math.random() - 7.5;
+                shape.y_velocity = yFactor * factor * 7.5 + 15 * Math.random() - 7.5;
+                shape.z_velocity = (-.75 * z_velocity * factor) + 85;
+
+                shape.x_rotationSpeed = 2 * Math.PI * Math.random() + Math.PI;
+                shape.y_rotationSpeed = 2 * Math.PI * Math.random() + Math.PI;
+                shape.z_rotationSpeed = 2 * Math.PI * Math.random() + Math.PI;
+                // calculate angle of impulse
+                // add randomness factor to angle
+            }
+        }
+        iteratePhysics(dt) {
+            for (let i = 0; i < this.shapePackages.length; i++) {
+                let shape = this.shapePackages[i];
+                // calculate distance from place
+                // let distance = Math.pow(Math.pow(shape.x - x, 2) + Math.pow(shape.y - y, 2), .5);
+                // let factor = 1 / distance;
+
+                // let xyAngle = maxAngle * factor;
+                
+                shape.x += shape.x_velocity * dt;
+                shape.y += shape.y_velocity * dt;
+                shape.z += shape.z_velocity * dt;
+
+                shape.xRot += shape.x_rotationSpeed * dt;
+                shape.yRot += shape.y_rotationSpeed * dt;
+                shape.zRot += shape.z_rotationSpeed * dt;
+                // calculate angle of impulse
+                // add randomness factor to angle
+            }
+            this.iterations = this.iterations - dt;
+        }
+        isDead() {
+            return this.iterations <= 0;
+        }
     }
 
 const UniformScatterPlatform = dropper.UniformScatterPlatform =

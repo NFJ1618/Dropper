@@ -66,6 +66,7 @@ export class Project extends Scene {
         this.initial_velocity = 0
         this.platforms = [new dropper.UniformScatterPlatform(this.spawn_pos, this.shapes.square,
             this.difficulty, this.dynamicMaterials.uniformColor(this.materials.platform))]
+        this.collidedPlatforms = [];
         this.thrust = vec4(0, 0, 0, 0)
         this.displacement = 5
         this.box_pos = Mat4.translation(0, 0, -30)
@@ -79,6 +80,10 @@ export class Project extends Scene {
         this.key_triggered_button("Down", ["s"], () => this.thrust[1] = -this.displacement, undefined, () => this.thrust[1] = 0);
         this.key_triggered_button("Right", ["d"], () => this.thrust[0] = this.displacement, undefined, () => this.thrust[0] = 0);
         this.new_line();
+    }
+
+    getPlayerPosition(matrix) {
+        return { x: matrix[0][3], y: matrix[1][3] }
     }
 
     display(context, program_state) {
@@ -138,8 +143,15 @@ export class Project extends Scene {
         //let wall_transform_y = base_transform.times(Mat4.rotation(Math.PI/2, 0, 1, 0))
         this.shapes.square.draw(context, program_state, this.box_pos, this.materials.test)
 
-
-        this.platforms = this.platforms.filter(x => x.position < 10)
+        let collided = this.platforms.filter(x => x.position >= -30);
+        if (collided.length > 0) {
+            let { x, y } = this.getPlayerPosition(this.box_pos);
+            for (let i = 0; i < collided.length; i++) {
+                collided[i].collide(x, y, z_velocity);
+            }
+        }
+        this.collidedPlatforms = this.collidedPlatforms.concat(collided);
+        this.platforms = this.platforms.filter(x => x.position < -30);
 
         if (this.platforms.length === 0) {
             this.score++;
@@ -147,15 +159,16 @@ export class Project extends Scene {
             if (this.difficulty >= .8) this.difficulty = .5;
             // this.platforms.push(new dropper.VaryingDepthScatterPlatform(this.spawn_pos, this.shapes.square, this.difficulty,
             //     this.dynamicMaterials.uniformColor(this.materials.platform), 3))
-            this.platforms.push(new dropper.NHolesPlatform(this.spawn_pos,  this.shapes.square, this.dynamicMaterials.uniformColor(this.materials.platform), 3, 3));
+            this.platforms.push(new dropper.NHolesPlatform(this.spawn_pos, this.shapes.square, this.dynamicMaterials.uniformColor(this.materials.platform), 3, 3));
         }
 
+        // render platforms
         for (let i = 0; i < this.platforms.length; ++i) {
             const platform = this.platforms[i];
             for (let j = 0; j < platform.shapePackages.length; ++j) {
                 const shapePackage = platform.shapePackages[j];
 
-                let object_start = Mat4.translation(shapePackage.xTranslation, shapePackage.yTranslation, platform.position + z_velocity * dt + shapePackage.zTranslation)
+                let object_start = Mat4.translation(shapePackage.x, shapePackage.y, platform.position + z_velocity * dt + shapePackage.z)
                 if (platform.material() == null)
                     platform.shapes[shapePackage.shapeIndex].draw(context, program_state, object_start, this.materials.test)
                 else
@@ -163,6 +176,24 @@ export class Project extends Scene {
             }
             platform.position += z_velocity * dt
         }
+
+        // render collided platforms
+        for (let i = 0; i < this.collidedPlatforms.length; i++) {
+            const platform = this.collidedPlatforms[i];
+            platform.iteratePhysics(dt);
+            for (let j = 0; j < platform.shapePackages.length; j++) {
+                const shapePackage = platform.shapePackages[j];
+                let object_start = Mat4.translation(shapePackage.x, shapePackage.y, platform.position + shapePackage.z)
+                object_start = object_start.times(Mat4.rotation(shapePackage.xRot, 1, 0, 0));
+                object_start = object_start.times(Mat4.rotation(shapePackage.yRot, 0, 1, 0));
+                object_start = object_start.times(Mat4.rotation(shapePackage.zRot, 0, 0, 1));
+                if (platform.material() == null)
+                    platform.shapes[shapePackage.shapeIndex].draw(context, program_state, object_start, this.materials.test)
+                else
+                    platform.shapes[shapePackage.shapeIndex].draw(context, program_state, object_start, platform.material())
+            }
+        }
+        this.collidedPlatforms = this.collidedPlatforms.filter(x => x.isDead() === false);
 
         for (let i = 0; i < this.walls.wall_transforms.length; ++i)
             this.walls.shape.draw(context, program_state, this.walls.wall_transforms[i], this.walls.material())
