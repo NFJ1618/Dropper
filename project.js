@@ -263,7 +263,9 @@ export class Project extends Scene {
 
         // DRAW PLAYER
         if (!this.first_person) {
-            program_state.set_camera(this.initial_camera_location)
+            let desired = this.initial_camera_location
+            program_state.camera_inverse = desired.map((x,i) =>
+                    Vector.from(program_state.camera_inverse[i]).mix(x, 0.1))
             this.shapes.square.draw(
                 context,
                 program_state,
@@ -272,10 +274,12 @@ export class Project extends Scene {
             )
         }
         else {
-            program_state.set_camera(Mat4.inverse(this.box_pos)) // might be slow, optimize by modifying position in camera space instead
+            let desired = Mat4.inverse(this.box_pos)
+            program_state.camera_inverse = desired.map((x,i) =>
+                    Vector.from(program_state.camera_inverse[i]).mix(x, 0.1))
+             // might be slow, optimize by modifying position in camera space instead
         }
         
-
 
         this.platforms = this.platforms.filter(x => x.position < 10)
 
